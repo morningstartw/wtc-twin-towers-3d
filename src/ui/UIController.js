@@ -320,6 +320,15 @@ export class UIController {
         case '4':
           this.triggerWeatherByIndex(3);
           break;
+        case '5':
+          this.triggerViewByName('hudson');
+          break;
+        case '6':
+          this.triggerViewByName('westst');
+          break;
+        case '7':
+          this.triggerViewByName('wintergarden');
+          break;
       }
     });
   }
@@ -327,6 +336,13 @@ export class UIController {
   triggerWeatherByIndex(index) {
     if (this.weatherBtns && this.weatherBtns[index]) {
       this.weatherBtns[index].click();
+    }
+  }
+
+  triggerViewByName(viewName) {
+    const btn = document.getElementById(`btn-view-${viewName}`);
+    if (btn) {
+      btn.click();
     }
   }
 

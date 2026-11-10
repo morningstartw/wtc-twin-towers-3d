@@ -63,6 +63,54 @@ export const HISTORICAL_HOTSPOTS = [
     location: '奧斯汀·J·托賓廣場中央',
     icon: '🌐',
     cameraPreset: 'plaza'
+  },
+  {
+    id: 'wfc',
+    name: '世界金融中心',
+    tag: 'BATTERY PARK CITY • WFC',
+    title: '世界金融中心 (Brookfield Place)',
+    position: new THREE.Vector3(-230, 205, -60),
+    description: '由知名後現代建築大師西薩·佩里（César Pelli）精心設計，包含四座冠以幾何銅綠屋頂（圓頂、金字塔、階梯稜台與平頂）的大廈，以及壯觀的冬季花園（Winter Garden）挑高玻璃拱頂中庭與哈德遜水岸休閒步道。',
+    year: '1985–1988 年落成',
+    location: '世貿中心西側水岸 (BPC)',
+    icon: '🏛️',
+    cameraPreset: 'wintergarden'
+  },
+  {
+    id: 'marriott',
+    name: 'WTC 3 萬豪酒店',
+    tag: '3 WTC • MARRIOTT HOTEL',
+    title: '3 WTC 萬豪世貿酒店 (Vista Hotel)',
+    position: new THREE.Vector3(-42, 65, 42),
+    description: '原名 Vista International Hotel，為雙塔西南側緊鄰的 22 層階梯狀鋼骨結構飯店，擁有 825 間客房。作為二戰後下曼哈頓興建的首座新型豪華飯店，直通雙塔大廳與地下商場，是連結世貿與西街的重要樞紐。',
+    year: '1981 年開幕',
+    location: '雙塔西南基座西街側',
+    icon: '🏨',
+    cameraPreset: 'westst'
+  },
+  {
+    id: 'wtc7',
+    name: 'WTC 7 梯形大廈',
+    tag: '7 WTC • 47-STORY TOWER',
+    title: '7 WTC 七號世貿大樓',
+    position: new THREE.Vector3(-45, 185, -210),
+    description: '坐落於維西街北側的 47 層摩天大樓，跨建於聯合愛迪生變電所上方。外牆採用醒目的紅花崗岩與幾何帷幕，三樓設有寬闊的戶外散步道高架天橋，跨越西街直達世貿主廣場。',
+    year: '1987 年落成',
+    location: '維西街北側 (47 層梯形塔)',
+    icon: '🏢',
+    cameraPreset: 'aerial'
+  },
+  {
+    id: 'hudson-ferry',
+    name: '哈德遜水岸渡輪',
+    tag: 'HUDSON RIVER • HARBOR FERRY',
+    title: '哈德遜河水岸與客運渡輪',
+    position: new THREE.Vector3(-450, 8, 50),
+    description: '哈德遜河下曼哈頓水岸碼頭（WFC Ferry Terminal）是紐約繁華的客運渡輪網絡核心樞紐，雙體渡輪日夜頻繁往返新澤西與曼哈頓。開闊的水面視野是遠眺世貿雙塔巨柱天際線與世界金融中心水岸大廈群的最佳景點。',
+    year: '1989 年碼頭啟用',
+    location: '哈德遜河客運水域與碼頭',
+    icon: '⛴️',
+    cameraPreset: 'hudson'
   }
 ];
 
@@ -86,6 +134,9 @@ export function createHotspots(scene, camera, domContainer, onFocusLocation) {
   const yearEl = document.getElementById('hotspot-year');
   const locEl = document.getElementById('hotspot-location');
   const closeBtn = document.getElementById('btn-close-hotspot');
+  const flyBtn = document.getElementById('btn-hotspot-fly');
+
+  let currentModalData = null;
 
   // 生成 HTML 標籤
   const hotspotItems = HISTORICAL_HOTSPOTS.map((data) => {
@@ -135,6 +186,7 @@ export function createHotspots(scene, camera, domContainer, onFocusLocation) {
    */
   function openModal(data) {
     if (!modal) return;
+    currentModalData = data;
     if (tagEl) tagEl.textContent = data.tag;
     if (titleEl) titleEl.textContent = data.title;
     if (descEl) descEl.textContent = data.description;
@@ -157,6 +209,16 @@ export function createHotspots(scene, camera, domContainer, onFocusLocation) {
     closeBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       closeModal();
+    });
+  }
+
+  // 彈窗內一鍵平滑飛往該景點視角按鈕
+  if (flyBtn) {
+    flyBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (currentModalData && typeof onFocusLocation === 'function') {
+        onFocusLocation(currentModalData);
+      }
     });
   }
 

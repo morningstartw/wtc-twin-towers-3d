@@ -27,6 +27,21 @@ export const CAMERA_PRESETS = {
     pos: new THREE.Vector3(-42, 495, -42),
     target: new THREE.Vector3(-45, 470, -45),
     title: '北塔 526m 避雷針天線'
+  },
+  hudson: {
+    pos: new THREE.Vector3(-600, 75, 0),
+    target: new THREE.Vector3(0, 180, 0),
+    title: '哈德遜水岸全景'
+  },
+  westst: {
+    pos: new THREE.Vector3(-90, 4, 30),
+    target: new THREE.Vector3(-50, 180, -20),
+    title: '西街人行道仰角'
+  },
+  wintergarden: {
+    pos: new THREE.Vector3(-285, 12, 0),
+    target: new THREE.Vector3(0, 200, 0),
+    title: '冬季花園水岸步道'
   }
 };
 
@@ -205,7 +220,7 @@ export function createCameraManager(camera, domElement, options = {}) {
 
   /**
    * 平滑飛往預設景點
-   * @param {'plaza'|'aerial'|'deck'|'antenna'|string} presetName 
+   * @param {'plaza'|'aerial'|'deck'|'antenna'|'hudson'|'westst'|'wintergarden'|string} presetName 
    * @param {number} [duration=1.5] 秒數
    * @param {Function} [callback]
    */

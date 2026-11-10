@@ -406,8 +406,8 @@ class WTCApp {
   }
 
   /**
-   * 切換預設經典導覽視角 (Task 7: 平滑飛行過渡)
-   * @param {'plaza'|'aerial'|'deck'|'antenna'} view
+   * 切換預設經典導覽視角 (Task 7 & Expansion Task 6: 平滑飛行過渡)
+   * @param {'plaza'|'aerial'|'deck'|'antenna'|'hudson'|'westst'|'wintergarden'|string} view
    */
   switchPresetView(view) {
     if (this.cameraManager) {
