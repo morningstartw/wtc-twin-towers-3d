@@ -12,6 +12,7 @@ import {
 import { createTwinTowers } from './models/Towers.js';
 import { createWTCComplex } from './models/WTCComplex.js';
 import { createWorldFinancialCenter } from './models/WorldFinancialCenter.js';
+import { createHudsonRiver } from './models/HudsonRiver.js';
 import { createPlaza } from './models/Plaza.js';
 import { createAirplane } from './models/Airplane.js';
 import { createEnvironment } from './scene/Environment.js';
@@ -44,6 +45,7 @@ class WTCApp {
     this.initTwinTowers();
     this.initWTCComplex();
     this.initWorldFinancialCenter();
+    this.initHudsonRiver();
     this.initTributeInLight();
     this.initAirplane();
     this.initHotspots();
@@ -221,6 +223,17 @@ class WTCApp {
   }
 
   /**
+   * 初始化哈德遜河水域與動態遊弋客運渡輪 (Expansion Task 3)
+   */
+  initHudsonRiver() {
+    this.hudsonRiver = createHudsonRiver({
+      isNight: false
+    });
+    this.scene.add(this.hudsonRiver.group);
+    window.wtcHudsonRiver = this.hudsonRiver;
+  }
+
+  /**
    * 初始化遠景平穩巡航民航機 (Task 5: Scenic Background Airplane)
    */
   initAirplane() {
@@ -290,6 +303,11 @@ class WTCApp {
         // 世界金融中心日夜燈光切換 (Expansion Task 2)
         if (this.worldFinancialCenter) {
           this.worldFinancialCenter.setNightMode(isNight);
+        }
+
+        // 哈德遜河水面與渡輪日夜切換 (Expansion Task 3)
+        if (this.hudsonRiver && this.hudsonRiver.setNightMode) {
+          this.hudsonRiver.setNightMode(isNight);
         }
 
         // 紀念天際光柱：夜景模式預設點亮，其他模式關閉 (Task 6)
@@ -447,6 +465,11 @@ class WTCApp {
     // 動態更新世界金融中心航空警示燈 (Expansion Task 2)
     if (this.worldFinancialCenter && this.worldFinancialCenter.update) {
       this.worldFinancialCenter.update(delta, this.clock.getElapsedTime());
+    }
+
+    // 動態更新哈德遜河水面漣漪與巡航渡輪 (Expansion Task 3)
+    if (this.hudsonRiver && this.hudsonRiver.update) {
+      this.hudsonRiver.update(delta, this.clock.getElapsedTime());
     }
 
     // 動態更新大氣天幕、漂浮雲群、閃爍星空與雨絲粒子 (Task 6: Environment & Weather)
