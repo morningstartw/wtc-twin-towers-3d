@@ -11,6 +11,7 @@ import {
   createWaterBumpTexture
 } from './utils/ProceduralTextures.js';
 import { createTwinTowers } from './models/Towers.js';
+import { createPlaza } from './models/Plaza.js';
 
 class WTCApp {
   constructor() {
@@ -28,7 +29,7 @@ class WTCApp {
     this.initControls();
     this.initLights();
     this.initProceduralTextures();
-    this.initPlaceholderGround();
+    this.initPlaza();
     this.initTwinTowers();
     this.initUIEvents();
     this.initResizeHandler();
@@ -142,57 +143,16 @@ class WTCApp {
   }
 
   /**
-   * 建立基礎地面網格與參考定位，供 Task 1/2 驗證
+   * 初始化奧斯汀·J·托賓廣場、花崗岩基座、噴泉水池與克尼格天球 (Task 4: Plaza & The Sphere)
    */
-  initPlaceholderGround() {
-    // 曼哈頓街區外圍參考地面
-    const groundGeo = new THREE.PlaneGeometry(1600, 1600);
-    const groundMat = new THREE.MeshStandardMaterial({
-      color: 0x111622,
-      roughness: 0.85,
-      metalness: 0.1
+  initPlaza() {
+    this.plaza = createPlaza({
+      plazaTexture: this.textures.plazaPaving,
+      waterTexture: this.textures.waterBump
     });
-    const ground = new THREE.Mesh(groundGeo, groundMat);
-    ground.rotation.x = -Math.PI / 2;
-    ground.receiveShadow = true;
-    this.scene.add(ground);
-
-    // 奧斯汀·J·托賓廣場放射狀花崗岩鋪石地面 (Austin J. Tobin Plaza preview)
-    const plazaGeo = new THREE.CircleGeometry(160, 64);
-    const plazaMat = new THREE.MeshStandardMaterial({
-      map: this.textures.plazaPaving,
-      roughness: 0.75,
-      metalness: 0.15
-    });
-    const plazaMesh = new THREE.Mesh(plazaGeo, plazaMat);
-    plazaMesh.rotation.x = -Math.PI / 2;
-    plazaMesh.position.y = 0.3;
-    plazaMesh.receiveShadow = true;
-    this.scene.add(plazaMesh);
-
-    // 奧斯汀廣場噴泉水池 (Water Bump Map 凹凸貼圖驗證)
-    const fountainGeo = new THREE.CircleGeometry(25, 48);
-    const fountainMat = new THREE.MeshStandardMaterial({
-      color: 0x16384c,
-      roughness: 0.15,
-      metalness: 0.85,
-      bumpMap: this.textures.waterBump,
-      bumpScale: 0.4
-    });
-    this.fountainMesh = new THREE.Mesh(fountainGeo, fountainMat);
-    this.fountainMesh.rotation.x = -Math.PI / 2;
-    this.fountainMesh.position.y = 0.45;
-    this.scene.add(this.fountainMesh);
-
-    // 經典網格輔助 (細密參考刻度)
-    const grid = new THREE.GridHelper(1000, 50, 0x38bdf8, 0x1f293d);
-    grid.position.y = 0.2;
-    this.scene.add(grid);
-
-    // 座標輔助 (調小不干擾視覺)
-    const axes = new THREE.AxesHelper(50);
-    axes.position.y = 0.5;
-    this.scene.add(axes);
+    this.scene.add(this.plaza.group);
+    this.fountainMesh = this.plaza.waterMesh;
+    window.wtcPlaza = this.plaza;
   }
 
   /**
@@ -330,7 +290,7 @@ class WTCApp {
         this.controls.target.set(-70, 480, -70);
         break;
       case 'plaza': // 奧斯汀廣場中央地面仰望雙塔雙影
-        this.camera.position.set(0, 3, 25);
+        this.camera.position.set(0, 3.2, 28);
         this.controls.target.set(0, 220, 0);
         break;
       case 'aerial': // 曼哈頓下城全景鳥瞰
@@ -369,9 +329,9 @@ class WTCApp {
       this.controls.update();
     }
 
-    // 動態更新噴泉微波水紋 (Task 2)
-    if (this.textures?.waterBump?.updateRipples) {
-      this.textures.waterBump.updateRipples(this.clock.getElapsedTime());
+    // 動態更新噴泉水紋與克尼格天球 (Task 4: High-Performance GPU UV Scroll)
+    if (this.plaza && this.plaza.update) {
+      this.plaza.update(delta);
     }
 
     // 動態更新雙塔特色 (Task 3: 航空障礙燈脈衝閃爍)
