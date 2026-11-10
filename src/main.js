@@ -11,6 +11,7 @@ import {
 } from './utils/ProceduralTextures.js';
 import { createTwinTowers } from './models/Towers.js';
 import { createWTCComplex } from './models/WTCComplex.js';
+import { createWorldFinancialCenter } from './models/WorldFinancialCenter.js';
 import { createPlaza } from './models/Plaza.js';
 import { createAirplane } from './models/Airplane.js';
 import { createEnvironment } from './scene/Environment.js';
@@ -42,6 +43,7 @@ class WTCApp {
     this.initPlaza();
     this.initTwinTowers();
     this.initWTCComplex();
+    this.initWorldFinancialCenter();
     this.initTributeInLight();
     this.initAirplane();
     this.initHotspots();
@@ -208,6 +210,17 @@ class WTCApp {
   }
 
   /**
+   * 初始化世界金融中心四座大樓、冬季花園玻璃中庭與水岸步道 (Expansion Task 2)
+   */
+  initWorldFinancialCenter() {
+    this.worldFinancialCenter = createWorldFinancialCenter({
+      isNight: false
+    });
+    this.scene.add(this.worldFinancialCenter.group);
+    window.worldFinancialCenter = this.worldFinancialCenter;
+  }
+
+  /**
    * 初始化遠景平穩巡航民航機 (Task 5: Scenic Background Airplane)
    */
   initAirplane() {
@@ -272,6 +285,11 @@ class WTCApp {
         // 世貿中心周邊附屬建築群日夜燈光切換 (Expansion Task 1)
         if (this.wtcComplex) {
           this.wtcComplex.setNightMode(isNight);
+        }
+
+        // 世界金融中心日夜燈光切換 (Expansion Task 2)
+        if (this.worldFinancialCenter) {
+          this.worldFinancialCenter.setNightMode(isNight);
         }
 
         // 紀念天際光柱：夜景模式預設點亮，其他模式關閉 (Task 6)
@@ -424,6 +442,11 @@ class WTCApp {
     // 動態更新世貿中心周邊附屬建築群航空警示燈 (Expansion Task 1)
     if (this.wtcComplex && this.wtcComplex.update) {
       this.wtcComplex.update(delta, this.clock.getElapsedTime());
+    }
+
+    // 動態更新世界金融中心航空警示燈 (Expansion Task 2)
+    if (this.worldFinancialCenter && this.worldFinancialCenter.update) {
+      this.worldFinancialCenter.update(delta, this.clock.getElapsedTime());
     }
 
     // 動態更新大氣天幕、漂浮雲群、閃爍星空與雨絲粒子 (Task 6: Environment & Weather)
