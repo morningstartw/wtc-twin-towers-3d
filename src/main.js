@@ -13,6 +13,7 @@ import { createTwinTowers } from './models/Towers.js';
 import { createWTCComplex } from './models/WTCComplex.js';
 import { createWorldFinancialCenter } from './models/WorldFinancialCenter.js';
 import { createHudsonRiver } from './models/HudsonRiver.js';
+import { createUrbanStreets } from './models/UrbanStreets.js';
 import { createPlaza } from './models/Plaza.js';
 import { createAirplane } from './models/Airplane.js';
 import { createEnvironment } from './scene/Environment.js';
@@ -46,6 +47,7 @@ class WTCApp {
     this.initWTCComplex();
     this.initWorldFinancialCenter();
     this.initHudsonRiver();
+    this.initUrbanStreets();
     this.initTributeInLight();
     this.initAirplane();
     this.initHotspots();
@@ -234,6 +236,17 @@ class WTCApp {
   }
 
   /**
+   * 初始化西街（Route 9A）多線道主幹道、車流光軌與水岸綠蔭行道樹 (Expansion Task 4)
+   */
+  initUrbanStreets() {
+    this.urbanStreets = createUrbanStreets({
+      isNight: false
+    });
+    this.scene.add(this.urbanStreets.group);
+    window.wtcUrbanStreets = this.urbanStreets;
+  }
+
+  /**
    * 初始化遠景平穩巡航民航機 (Task 5: Scenic Background Airplane)
    */
   initAirplane() {
@@ -308,6 +321,11 @@ class WTCApp {
         // 哈德遜河水面與渡輪日夜切換 (Expansion Task 3)
         if (this.hudsonRiver && this.hudsonRiver.setNightMode) {
           this.hudsonRiver.setNightMode(isNight);
+        }
+
+        // 西街交通光軌與街燈日夜切換 (Expansion Task 4)
+        if (this.urbanStreets && this.urbanStreets.setNightMode) {
+          this.urbanStreets.setNightMode(isNight);
         }
 
         // 紀念天際光柱：夜景模式預設點亮，其他模式關閉 (Task 6)
@@ -470,6 +488,11 @@ class WTCApp {
     // 動態更新哈德遜河水面漣漪與巡航渡輪 (Expansion Task 3)
     if (this.hudsonRiver && this.hudsonRiver.update) {
       this.hudsonRiver.update(delta, this.clock.getElapsedTime());
+    }
+
+    // 動態更新西街雙向車流光軌高速流動循環 (Expansion Task 4)
+    if (this.urbanStreets && this.urbanStreets.update) {
+      this.urbanStreets.update(delta);
     }
 
     // 動態更新大氣天幕、漂浮雲群、閃爍星空與雨絲粒子 (Task 6: Environment & Weather)
