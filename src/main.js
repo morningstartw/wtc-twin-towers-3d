@@ -16,6 +16,9 @@ import { createEnvironment } from './scene/Environment.js';
 import { createTributeInLight } from './models/TributeInLight.js';
 import { setupPostProcessing } from './scene/PostProcessing.js';
 import { createCameraManager } from './scene/CameraManager.js';
+import { createHotspots } from './ui/Hotspots.js';
+import { captureScreenshot } from './ui/Screenshot.js';
+import { initUI } from './ui/UIController.js';
 
 class WTCApp {
   constructor() {
@@ -38,6 +41,7 @@ class WTCApp {
     this.initTwinTowers();
     this.initTributeInLight();
     this.initAirplane();
+    this.initHotspots();
     this.initUIEvents();
     this.initResizeHandler();
 
@@ -204,39 +208,29 @@ class WTCApp {
   }
 
   /**
-   * 綁定介面事件 (切換按鈕、開關、全螢幕)
+   * 初始化 3D 空間歷史標籤與互動卡片 (Task 8: 3D Hotspots & Architectural Landmarks)
+   */
+  initHotspots() {
+    this.hotspots = createHotspots(
+      this.scene,
+      this.camera,
+      document.getElementById('hotspot-markers-container'),
+      (landmark) => {
+        // 點擊地標時相機平滑平移對焦
+        if (landmark.cameraPreset && this.cameraManager) {
+          this.switchPresetView(landmark.cameraPreset);
+        }
+      }
+    );
+    window.wtcHotspots = this.hotspots;
+  }
+
+  /**
+   * 透過 UIController 統一管理所有人機互動與介面事件 (Task 8: UIController)
    */
   initUIEvents() {
-    // 隱藏/顯示 UI
-    const toggleUiBtn = document.getElementById('btn-toggle-ui');
-    const overlay = document.getElementById('ui-overlay');
-    if (toggleUiBtn && overlay) {
-      toggleUiBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        overlay.classList.toggle('ui-hidden');
-      });
-    }
-
-    // 全螢幕切換
-    const fullscreenBtn = document.getElementById('btn-fullscreen');
-    if (fullscreenBtn) {
-      fullscreenBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (!document.fullscreenElement) {
-          document.documentElement.requestFullscreen().catch(() => {});
-        } else {
-          document.exitFullscreen().catch(() => {});
-        }
-      });
-    }
-
-    // 天氣切換按鈕互斥高亮與日夜窗戶貼圖切換
-    const weatherBtns = document.querySelectorAll('.weather-btn');
-    weatherBtns.forEach((btn) => {
-      btn.addEventListener('click', () => {
-        weatherBtns.forEach((b) => b.classList.remove('active'));
-        btn.classList.add('active');
-        const weather = btn.dataset.weather;
+    this.uiController = initUI({
+      onWeatherChange: (weather) => {
         const isNight = weather === 'night';
 
         // 動態氣候系統切換 (Task 6)
@@ -244,7 +238,7 @@ class WTCApp {
           this.environment.setWeather(weather);
         }
 
-        // 自動調整後製泛光強度 (Task 7)
+        // 後製泛光強度微調 (Task 7)
         if (this.postProcessing) {
           const bloomStrengthMap = {
             night: 0.9,
@@ -256,116 +250,68 @@ class WTCApp {
           this.postProcessing.setBloomStrength(strength);
         }
 
-        // 雙塔立面辦公室日夜燈光切換 (Task 3)
+        // 雙塔日夜燈光切換 (Task 3)
         if (this.towers) {
           this.towers.setNightMode(isNight);
         }
 
         // 紀念天際光柱：夜景模式預設點亮，其他模式關閉 (Task 6)
-        const tributeSwitch = document.getElementById('btn-toggle-tribute');
-        if (this.tributeInLight && tributeSwitch) {
-          if (isNight) {
-            tributeSwitch.classList.add('active');
-            tributeSwitch.setAttribute('aria-checked', 'true');
-            this.tributeInLight.setVisible(true);
-          } else {
-            tributeSwitch.classList.remove('active');
-            tributeSwitch.setAttribute('aria-checked', 'false');
-            this.tributeInLight.setVisible(false);
+        if (this.tributeInLight) {
+          this.tributeInLight.setVisible(isNight);
+          if (this.uiController) {
+            this.uiController.setTributeActive(isNight);
           }
         }
-      });
-    });
+      },
 
-    // 經典導覽視角切換 (南塔觀景台 / 北塔天線 / 廣場 / 全景)
-    const viewBtns = document.querySelectorAll('.view-btn');
-    viewBtns.forEach((btn) => {
-      btn.addEventListener('click', () => {
-        viewBtns.forEach((b) => b.classList.remove('active'));
-        btn.classList.add('active');
-        const view = btn.dataset.view;
+      onViewChange: (view) => {
         this.switchPresetView(view);
-      });
-    });
+      },
 
-    // 相機模式按鈕互斥高亮與模式切換 (Task 7)
-    const modeBtns = document.querySelectorAll('.mode-btn');
-    const flyGuide = document.getElementById('first-person-guide');
-    modeBtns.forEach((btn) => {
-      btn.addEventListener('click', () => {
-        modeBtns.forEach((b) => b.classList.remove('active'));
-        btn.classList.add('active');
-        const mode = btn.dataset.mode;
-        
+      onModeChange: (mode) => {
         if (this.cameraManager) {
           this.cameraManager.setMode(mode === 'orbit' ? 'orbit' : 'fly');
         }
+      },
 
-        if (flyGuide) {
-          if (mode === 'fly' || mode === 'walk') {
-            flyGuide.classList.remove('hidden');
-          } else {
-            flyGuide.classList.add('hidden');
-          }
-        }
-      });
-    });
-
-    // 漫遊提示退出按鈕
-    const exitFlyBtn = document.getElementById('btn-exit-fly');
-    if (exitFlyBtn) {
-      exitFlyBtn.addEventListener('click', () => {
-        const orbitBtn = document.querySelector('.mode-btn[data-mode="orbit"]');
-        if (orbitBtn) {
-          orbitBtn.click();
-        } else if (this.cameraManager) {
-          this.cameraManager.setMode('orbit');
-          if (flyGuide) flyGuide.classList.add('hidden');
-        }
-      });
-    }
-
-    // 切換開關 (X-Ray 與 紀念光柱)
-    const toggleSwitches = document.querySelectorAll('.toggle-switch');
-    toggleSwitches.forEach((sw) => {
-      sw.addEventListener('click', () => {
-        const isActive = sw.classList.toggle('active');
-        sw.setAttribute('aria-checked', isActive ? 'true' : 'false');
-
-        if (sw.id === 'btn-toggle-xray' && this.towers) {
+      onToggleXRay: (isActive) => {
+        if (this.towers) {
           this.towers.setXRayMode(isActive);
-        } else if (sw.id === 'btn-toggle-tribute' && this.tributeInLight) {
+        }
+      },
+
+      onToggleTribute: (isActive) => {
+        if (this.tributeInLight) {
           this.tributeInLight.setVisible(isActive);
         }
-      });
+      },
+
+      onToggleHotspots: (isActive) => {
+        if (this.hotspots) {
+          this.hotspots.setVisible(isActive);
+        }
+      },
+
+      onScreenshot: async () => {
+        if (this.uiController) {
+          this.uiController.showToast('正在準備 4K 寫真截圖...', 'info', 1200);
+        }
+
+        await captureScreenshot(this.renderer, this.scene, this.camera, {
+          width: 3840,
+          height: 2160,
+          fileName: 'WTC_Twin_Towers_Screenshot.png',
+          postProcessing: this.postProcessing,
+          onSuccess: () => {
+            if (this.uiController) {
+              this.uiController.showToast('📸 4K 超高畫質寫真截圖已儲存！', 'success', 3500);
+            }
+          }
+        });
+      }
     });
 
-    // 4K 寫真截圖匯出按鈕
-    const screenshotBtn = document.getElementById('btn-screenshot');
-    if (screenshotBtn) {
-      screenshotBtn.addEventListener('click', () => {
-        // 先確保畫面後製最新一幀
-        if (this.postProcessing) {
-          this.postProcessing.render();
-        } else {
-          this.renderer.render(this.scene, this.camera);
-        }
-        const dataUrl = this.renderer.domElement.toDataURL('image/png');
-        const link = document.createElement('a');
-        link.download = `WTC_Twin_Towers_${Date.now()}.png`;
-        link.href = dataUrl;
-        link.click();
-      });
-    }
-
-    // 熱點資訊關閉按鈕
-    const closeHotspotBtn = document.getElementById('btn-close-hotspot');
-    const hotspotModal = document.getElementById('hotspot-modal');
-    if (closeHotspotBtn && hotspotModal) {
-      closeHotspotBtn.addEventListener('click', () => {
-        hotspotModal.classList.add('hidden');
-      });
-    }
+    window.wtcUIController = this.uiController;
   }
 
   /**
@@ -374,22 +320,11 @@ class WTCApp {
    */
   switchPresetView(view) {
     if (this.cameraManager) {
-      this.cameraManager.flyTo(view, 1.5, () => {
-        // 飛行到達後的通知或回呼
-      });
+      this.cameraManager.flyTo(view, 1.5, () => {});
 
-      // 同步 UI 模式按鈕狀態回軌道檢視
-      const modeBtns = document.querySelectorAll('.mode-btn');
-      const flyGuide = document.getElementById('first-person-guide');
-      modeBtns.forEach((b) => {
-        if (b.dataset.mode === 'orbit') {
-          b.classList.add('active');
-        } else {
-          b.classList.remove('active');
-        }
-      });
-      if (flyGuide) {
-        flyGuide.classList.add('hidden');
+      // 同步 UI 狀態
+      if (this.uiController) {
+        this.uiController.setView(view);
       }
     }
   }
@@ -451,6 +386,11 @@ class WTCApp {
     // 動態更新紀念天際光柱呼吸律動與光塵微粒 (Task 6: Tribute in Light)
     if (this.tributeInLight && this.tributeInLight.update) {
       this.tributeInLight.update(this.clock.getElapsedTime());
+    }
+
+    // 動態更新 3D 空間歷史標籤螢幕投影 (Task 8: 3D Hotspots)
+    if (this.hotspots && this.hotspots.update) {
+      this.hotspots.update();
     }
 
     // 後製管線渲染 (Task 7: EffectComposer & UnrealBloomPass)

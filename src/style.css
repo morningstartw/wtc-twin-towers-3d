@@ -577,25 +577,35 @@ html, body {
 
 .hotspot-pin {
   position: absolute;
+  top: 0;
+  left: 0;
   transform: translate(-50%, -50%);
   pointer-events: auto;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 6px;
-  background: rgba(13, 20, 36, 0.85);
+  background: rgba(13, 20, 36, 0.88);
   border: 1px solid var(--accent-cyan);
   border-radius: var(--radius-full);
-  padding: 4px 10px 4px 6px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6), var(--glow-cyan);
-  backdrop-filter: blur(8px);
-  transition: transform var(--transition-fast), border-color var(--transition-fast);
+  padding: 5px 12px 5px 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), var(--glow-cyan);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
   white-space: nowrap;
+  user-select: none;
 }
 
 .hotspot-pin:hover {
-  transform: translate(-50%, -50%) scale(1.1);
   border-color: #ffffff;
+  box-shadow: 0 6px 24px rgba(56, 189, 248, 0.6), 0 0 12px rgba(255, 255, 255, 0.8);
+  z-index: 25;
+}
+
+.pin-icon {
+  font-size: 13px;
+  line-height: 1;
 }
 
 .pin-dot {
@@ -616,6 +626,82 @@ html, body {
   font-size: 11px;
   font-weight: 600;
   color: #ffffff;
+}
+
+/* ==========================================================================
+   Screen Flash Animation (Screenshot Shutter)
+   ========================================================================== */
+.screen-flash {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #ffffff;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 99999;
+  transition: opacity 0.35s ease-out;
+}
+
+.screen-flash.active {
+  opacity: 0.85;
+  transition: none;
+}
+
+/* ==========================================================================
+   Toast Notification System
+   ========================================================================== */
+.toast-container {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.toast-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  border-radius: var(--radius-full);
+  background: rgba(13, 20, 36, 0.88);
+  border: 1px solid var(--panel-border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6), 0 0 16px rgba(56, 189, 248, 0.2);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0;
+  transform: translateY(-12px) scale(0.95);
+  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: auto;
+}
+
+.toast-item.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.toast-item.hide {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.92);
+}
+
+.toast-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.toast-text {
+  letter-spacing: 0.2px;
 }
 
 /* ==========================================================================

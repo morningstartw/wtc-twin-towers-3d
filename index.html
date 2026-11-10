@@ -61,19 +61,19 @@
           <span>動態環境氣候</span>
         </div>
         <div class="btn-grid grid-4" id="weather-controls">
-          <button class="glass-btn weather-btn active" data-weather="day">
+          <button id="btn-weather-day" class="glass-btn weather-btn active" data-weather="day">
             <span class="btn-icon">☀️</span>
             <span class="btn-text">晴天</span>
           </button>
-          <button class="glass-btn weather-btn" data-weather="sunset">
+          <button id="btn-weather-sunset" class="glass-btn weather-btn" data-weather="sunset">
             <span class="btn-icon">🌅</span>
             <span class="btn-text">黃昏</span>
           </button>
-          <button class="glass-btn weather-btn" data-weather="night">
+          <button id="btn-weather-night" class="glass-btn weather-btn" data-weather="night">
             <span class="btn-icon">🌙</span>
             <span class="btn-text">夜晚</span>
           </button>
-          <button class="glass-btn weather-btn" data-weather="rain">
+          <button id="btn-weather-rain" class="glass-btn weather-btn" data-weather="rain">
             <span class="btn-icon">🌧️</span>
             <span class="btn-text">雨霧</span>
           </button>
@@ -152,6 +152,17 @@
               <span class="switch-thumb"></span>
             </button>
           </div>
+
+          <!-- 3D 歷史熱點標籤開關 -->
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-name">歷史標籤 (3D Hotspots)</span>
+              <span class="toggle-desc">核心構造導覽與歷史解說標籤</span>
+            </div>
+            <button id="btn-toggle-hotspots" class="toggle-switch active" role="switch" aria-checked="true">
+              <span class="switch-thumb"></span>
+            </button>
+          </div>
         </div>
       </section>
 
@@ -172,8 +183,11 @@
       <div class="guide-item"><kbd>Shift</kbd> 飛行加速</div>
       <div class="guide-separator"></div>
       <div class="guide-item"><span class="icon">🖱️</span> 滑鼠點擊拖曳環顧</div>
-      <button id="btn-exit-fly" class="glass-btn mini-btn">退出漫遊</button>
+      <button id="btn-exit-walk" class="glass-btn mini-btn">退出漫遊</button>
     </div>
+
+    <!-- 玻璃擬態 Toast 通知容器 -->
+    <div id="toast-container" class="toast-container"></div>
 
     <!-- 底部歷史熱點資訊彈窗卡片 (點擊 3D 熱點時觸發) -->
     <div id="hotspot-modal" class="glass-panel hotspot-card hidden">
