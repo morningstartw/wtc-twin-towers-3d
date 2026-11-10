@@ -1,0 +1,692 @@
+/* ==========================================================================
+   WTC Twin Towers Three.js - Modern Glassmorphism Design System
+   ========================================================================== */
+
+:root {
+  --font-sans: 'Inter', 'Noto Sans TC', system-ui, -apple-system, sans-serif;
+  --font-serif: 'Cinzel', serif;
+
+  /* Colors */
+  --bg-deep: #07090e;
+  --panel-bg: rgba(13, 20, 36, 0.68);
+  --panel-bg-hover: rgba(22, 33, 58, 0.8);
+  --panel-border: rgba(255, 255, 255, 0.12);
+  --panel-border-focus: rgba(96, 165, 250, 0.45);
+  
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  --accent-cyan: #38bdf8;
+  --accent-gold: #fbbf24;
+  --accent-indigo: #6366f1;
+  --accent-danger: #f43f5e;
+
+  --glow-cyan: 0 0 20px rgba(56, 189, 248, 0.45);
+  --glow-gold: 0 0 20px rgba(251, 191, 36, 0.45);
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  --transition-fast: 0.18s ease;
+  --transition-normal: 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ==========================================================================
+   Canvas Container
+   ========================================================================== */
+#canvas-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  outline: none;
+}
+
+/* ==========================================================================
+   UI Overlay Layer
+   ========================================================================== */
+#ui-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  pointer-events: none; /* Allows clicking through into 3D scene */
+  overflow: hidden;
+  transition: opacity 0.35s ease;
+}
+
+#ui-overlay.ui-hidden {
+  opacity: 0;
+  pointer-events: none !important;
+}
+
+/* Top-right toggle stays visible even when hidden or semi-visible */
+.top-right-tools {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  gap: 10px;
+  z-index: 50;
+  pointer-events: auto;
+}
+
+/* ==========================================================================
+   Glassmorphism Foundations
+   ========================================================================== */
+.glass-panel {
+  background: var(--panel-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  pointer-events: auto;
+  transition: transform var(--transition-normal), opacity var(--transition-normal);
+}
+
+.glass-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 8px 12px;
+  transition: all var(--transition-fast);
+  outline: none;
+  backdrop-filter: blur(8px);
+}
+
+.glass-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+.glass-btn:active {
+  transform: translateY(1px);
+}
+
+.glass-btn.active {
+  background: rgba(56, 189, 248, 0.22);
+  border-color: var(--accent-cyan);
+  box-shadow: var(--glow-cyan);
+  color: #fff;
+  font-weight: 600;
+}
+
+.glass-btn.icon-btn {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: var(--radius-md);
+  font-size: 18px;
+}
+
+/* ==========================================================================
+   Top-Left Header & Architectural Stats
+   ========================================================================== */
+.top-left-header {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  padding: 20px 24px;
+  max-width: 420px;
+}
+
+.header-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  background: rgba(251, 191, 36, 0.18);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  border-radius: var(--radius-full);
+  color: var(--accent-gold);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  margin-bottom: 8px;
+}
+
+.main-title {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #ffffff;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.main-title .en-sub {
+  font-family: var(--font-serif);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: 1px;
+}
+
+.subtitle {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  margin-bottom: 14px;
+}
+
+.specs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 12px;
+}
+
+.spec-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.spec-label {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.spec-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-cyan);
+}
+
+.spec-value small {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: normal;
+}
+
+/* ==========================================================================
+   Right-Side Control Panel
+   ========================================================================== */
+.right-control-panel {
+  position: absolute;
+  top: 75px;
+  right: 20px;
+  width: 320px;
+  padding: 18px 20px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.right-control-panel::-webkit-scrollbar {
+  width: 4px;
+}
+.right-control-panel::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.control-group {
+  margin-bottom: 16px;
+}
+
+.control-group:last-child {
+  margin-bottom: 0;
+}
+
+.group-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
+.btn-grid {
+  display: grid;
+  gap: 6px;
+}
+
+.grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.btn-grid .glass-btn {
+  padding: 8px 6px;
+  font-size: 12px;
+}
+
+.btn-icon {
+  font-size: 14px;
+}
+
+/* ==========================================================================
+   Toggle Switch Row
+   ========================================================================== */
+.toggle-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  transition: background var(--transition-fast);
+}
+
+.toggle-row:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.toggle-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.toggle-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.toggle-desc {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.toggle-switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  outline: none;
+  flex-shrink: 0;
+}
+
+.toggle-switch .switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  transition: transform var(--transition-fast);
+}
+
+.toggle-switch.active {
+  background: var(--accent-cyan);
+  border-color: var(--accent-cyan);
+  box-shadow: var(--glow-cyan);
+}
+
+.toggle-switch.active .switch-thumb {
+  transform: translateX(20px);
+}
+
+/* Special styling for tribute switch */
+#btn-toggle-tribute.active {
+  background: var(--accent-indigo);
+  border-color: var(--accent-indigo);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+}
+
+/* ==========================================================================
+   Primary Action Button
+   ========================================================================== */
+.action-group {
+  margin-top: 18px;
+}
+
+.primary-btn {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.35) 0%, rgba(99, 102, 241, 0.45) 100%);
+  border: 1px solid rgba(56, 189, 248, 0.5);
+  color: #ffffff;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 4px 15px rgba(56, 189, 248, 0.25);
+}
+
+.primary-btn:hover {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.5) 0%, rgba(99, 102, 241, 0.6) 100%);
+  border-color: var(--accent-cyan);
+  box-shadow: var(--glow-cyan);
+}
+
+.w-full {
+  width: 100%;
+}
+
+/* ==========================================================================
+   First-Person HUD Guide Toast
+   ========================================================================== */
+.guide-toast {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  color: var(--text-primary);
+  z-index: 40;
+  transition: transform var(--transition-normal), opacity var(--transition-normal);
+}
+
+.guide-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.guide-item kbd {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.guide-separator {
+  width: 1px;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.mini-btn {
+  padding: 4px 10px;
+  font-size: 11px;
+  border-radius: var(--radius-full);
+  background: rgba(244, 63, 94, 0.2);
+  border-color: var(--accent-danger);
+  color: #ff859b;
+}
+
+.mini-btn:hover {
+  background: rgba(244, 63, 94, 0.4);
+}
+
+/* ==========================================================================
+   Hotspot Card (Bottom Floating Modal)
+   ========================================================================== */
+.hotspot-card {
+  position: absolute;
+  bottom: 45px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 480px;
+  max-width: calc(100vw - 40px);
+  padding: 20px 24px;
+  z-index: 30;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.close-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.hotspot-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  color: var(--accent-cyan);
+  margin-bottom: 4px;
+}
+
+.hotspot-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 10px;
+}
+
+.hotspot-body {
+  font-size: 13px;
+  color: #cbd5e1;
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+
+.hotspot-footer {
+  display: flex;
+  gap: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 10px;
+}
+
+.hotspot-stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-name {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.stat-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-gold);
+}
+
+/* ==========================================================================
+   3D Hotspot Screen-space Marker Pins
+   ========================================================================== */
+#hotspot-markers-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.hotspot-pin {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(13, 20, 36, 0.85);
+  border: 1px solid var(--accent-cyan);
+  border-radius: var(--radius-full);
+  padding: 4px 10px 4px 6px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6), var(--glow-cyan);
+  backdrop-filter: blur(8px);
+  transition: transform var(--transition-fast), border-color var(--transition-fast);
+  white-space: nowrap;
+}
+
+.hotspot-pin:hover {
+  transform: translate(-50%, -50%) scale(1.1);
+  border-color: #ffffff;
+}
+
+.pin-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-cyan);
+  animation: pulse 1.8s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  50% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.7; }
+}
+
+.pin-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   Bottom Info Bar
+   ========================================================================== */
+.bottom-bar {
+  position: absolute;
+  bottom: 12px;
+  left: 20px;
+  right: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.fps-counter {
+  font-family: monospace;
+  font-weight: 600;
+  color: var(--accent-cyan);
+  background: rgba(0, 0, 0, 0.4);
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ==========================================================================
+   Utility Classes
+   ========================================================================== */
+.hidden {
+  display: none !important;
+}
+
+/* ==========================================================================
+   Responsive Breakpoints
+   ========================================================================== */
+@media (max-width: 900px) {
+  .top-left-header {
+    max-width: 340px;
+    padding: 14px 18px;
+  }
+  .main-title {
+    font-size: 17px;
+  }
+  .right-control-panel {
+    width: 280px;
+    padding: 14px 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .top-left-header {
+    top: 10px;
+    left: 10px;
+    right: 70px;
+    max-width: none;
+  }
+  .specs-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .right-control-panel {
+    top: auto;
+    bottom: 20px;
+    right: 10px;
+    left: 10px;
+    width: auto;
+    max-height: 45vh;
+  }
+  .bottom-bar {
+    display: none;
+  }
+}

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>紐約世界貿易中心雙塔 (1973 - 2001) 3D 紀念導覽</title>
+  <meta name="description" content="以 Three.js 純程式碼高保真重現 1973 年紐約世界貿易中心雙塔、奧斯汀廣場與克尼格天球。支援動態氣候、第一人稱自由漫遊、結構 X-Ray 透視與紀念光柱。" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./src/style.css" />
+</head>
+<body>
+  <!-- 3D 渲染畫布容器 -->
+  <div id="canvas-container"></div>
+
+  <!-- UI 頂層覆蓋層 -->
+  <div id="ui-overlay">
+    <!-- 左上方：歷史標題與建築核心規格徽章 -->
+    <header class="glass-panel top-left-header">
+      <div class="header-badge">HISTORICAL MONUMENT 1973 - 2001</div>
+      <h1 class="main-title">世界貿易中心雙塔 <span class="en-sub">World Trade Center</span></h1>
+      <p class="subtitle">建築師：山崎實 (Minoru Yamasaki) | 紐約曼哈頓 1:1 程式化重現</p>
+      
+      <div class="specs-grid">
+        <div class="spec-item">
+          <span class="spec-label">雙塔標高</span>
+          <span class="spec-value">415 m <small>(110 層)</small></span>
+        </div>
+        <div class="spec-item">
+          <span class="spec-label">北塔天線</span>
+          <span class="spec-value">526 m <small>(含天線)</small></span>
+        </div>
+        <div class="spec-item">
+          <span class="spec-label">結構創新</span>
+          <span class="spec-value">鋼框筒 (Tube-in-Tube)</span>
+        </div>
+        <div class="spec-item">
+          <span class="spec-label">密柱工法</span>
+          <span class="spec-value">472 根三叉戟立柱</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- 右上方工具欄：全螢幕與 UI 隱藏切換 -->
+    <div class="top-right-tools">
+      <button id="btn-toggle-ui" class="glass-btn icon-btn" title="切換 UI 顯示 / 沉浸模式" aria-label="切換 UI">
+        <span class="icon">👁️</span>
+      </button>
+      <button id="btn-fullscreen" class="glass-btn icon-btn" title="切換全螢幕" aria-label="全螢幕">
+        <span class="icon">⛶</span>
+      </button>
+    </div>
+
+    <!-- 右側：主要功能控制面板 -->
+    <aside class="glass-panel right-control-panel" id="control-panel">
+      <!-- 區塊 1：環境與氣候系統 -->
+      <section class="control-group">
+        <div class="group-title">
+          <span class="title-icon">🌤️</span>
+          <span>動態環境氣候</span>
+        </div>
+        <div class="btn-grid grid-4" id="weather-controls">
+          <button class="glass-btn weather-btn active" data-weather="day">
+            <span class="btn-icon">☀️</span>
+            <span class="btn-text">晴天</span>
+          </button>
+          <button class="glass-btn weather-btn" data-weather="sunset">
+            <span class="btn-icon">🌅</span>
+            <span class="btn-text">黃昏</span>
+          </button>
+          <button class="glass-btn weather-btn" data-weather="night">
+            <span class="btn-icon">🌙</span>
+            <span class="btn-text">夜晚</span>
+          </button>
+          <button class="glass-btn weather-btn" data-weather="rain">
+            <span class="btn-icon">🌧️</span>
+            <span class="btn-text">雨霧</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- 區塊 2：相機操控模式 -->
+      <section class="control-group">
+        <div class="group-title">
+          <span class="title-icon">🎥</span>
+          <span>相機操控模式</span>
+        </div>
+        <div class="btn-grid grid-2" id="camera-mode-controls">
+          <button class="glass-btn mode-btn active" data-mode="orbit">
+            <span class="btn-icon">🔄</span>
+            <span class="btn-text">軌道檢視</span>
+          </button>
+          <button class="glass-btn mode-btn" data-mode="fly">
+            <span class="btn-icon">🚶</span>
+            <span class="btn-text">第一人稱漫遊</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- 區塊 3：經典導覽視角 -->
+      <section class="control-group">
+        <div class="group-title">
+          <span class="title-icon">🏛️</span>
+          <span>經典導覽視角</span>
+        </div>
+        <div class="btn-grid grid-2" id="preset-view-controls">
+          <button class="glass-btn view-btn" data-view="plaza">
+            <span class="btn-icon">⛲</span>
+            <span class="btn-text">廣場仰望</span>
+          </button>
+          <button class="glass-btn view-btn" data-view="aerial">
+            <span class="btn-icon">🦅</span>
+            <span class="btn-text">全景鳥瞰</span>
+          </button>
+          <button class="glass-btn view-btn" data-view="deck">
+            <span class="btn-icon">🔭</span>
+            <span class="btn-text">南塔觀景台</span>
+          </button>
+          <button class="glass-btn view-btn" data-view="antenna">
+            <span class="btn-icon">📡</span>
+            <span class="btn-text">北塔天線</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- 區塊 4：特色互動功能 -->
+      <section class="control-group">
+        <div class="group-title">
+          <span class="title-icon">✨</span>
+          <span>建築與紀念特效</span>
+        </div>
+        <div class="toggle-list">
+          <!-- X-Ray 結構透視開關 -->
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-name">X-Ray 結構透視</span>
+              <span class="toggle-desc">透視核心筒鋼骨與樓板網格</span>
+            </div>
+            <button id="btn-toggle-xray" class="toggle-switch" role="switch" aria-checked="false">
+              <span class="switch-thumb"></span>
+            </button>
+          </div>
+
+          <!-- 紀念光柱開關 -->
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-name">紀念光柱 (Tribute in Light)</span>
+              <span class="toggle-desc">自雙塔直射雲霄的雙束藍白光芒</span>
+            </div>
+            <button id="btn-toggle-tribute" class="toggle-switch" role="switch" aria-checked="false">
+              <span class="switch-thumb"></span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 區塊 5：操作與匯出 -->
+      <section class="control-group action-group">
+        <button id="btn-screenshot" class="glass-btn primary-btn w-full">
+          <span class="btn-icon">📷</span>
+          <span class="btn-text">匯出 4K 寫真截圖</span>
+        </button>
+      </section>
+    </aside>
+
+    <!-- 第一人稱導航提示條 (預設隱藏) -->
+    <div id="first-person-guide" class="glass-panel guide-toast hidden">
+      <div class="guide-item"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 平面移動</div>
+      <div class="guide-separator"></div>
+      <div class="guide-item"><kbd>Space</kbd> 垂直升空</div>
+      <div class="guide-item"><kbd>Shift</kbd> 飛行加速</div>
+      <div class="guide-separator"></div>
+      <div class="guide-item"><span class="icon">🖱️</span> 滑鼠點擊拖曳環顧</div>
+      <button id="btn-exit-fly" class="glass-btn mini-btn">退出漫遊</button>
+    </div>
+
+    <!-- 底部歷史熱點資訊彈窗卡片 (點擊 3D 熱點時觸發) -->
+    <div id="hotspot-modal" class="glass-panel hotspot-card hidden">
+      <button id="btn-close-hotspot" class="close-btn" aria-label="關閉資訊">&times;</button>
+      <div class="hotspot-header">
+        <span class="hotspot-tag" id="hotspot-tag">ARCHITECTURAL FEATURE</span>
+        <h2 class="hotspot-title" id="hotspot-title">奧斯汀·J·托賓廣場與克尼格天球</h2>
+      </div>
+      <div class="hotspot-body" id="hotspot-description">
+        位於雙塔中央的奧斯汀·J·托賓廣場佔地約 5 英畝，中央為巨大的圓形噴泉與德國藝術家弗利茨·克尼格雕刻的青銅天球（The Sphere），象徵世界和平與國際貿易的和諧共生。
+      </div>
+      <div class="hotspot-footer">
+        <div class="hotspot-stat">
+          <span class="stat-name">完工年代</span>
+          <span class="stat-value" id="hotspot-year">1971</span>
+        </div>
+        <div class="hotspot-stat">
+          <span class="stat-name">建築位置</span>
+          <span class="stat-value" id="hotspot-location">WTC Plaza Center</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3D 空間熱點標籤容器 (掛載 HTML Marker) -->
+    <div id="hotspot-markers-container"></div>
+
+    <!-- 底部版權與歷史紀念資訊 -->
+    <footer class="bottom-bar">
+      <span>World Trade Center (1973–2001) Memorial Simulation &bull; Pure Procedural Three.js</span>
+      <span class="fps-counter" id="fps-counter">60 FPS</span>
+    </footer>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
