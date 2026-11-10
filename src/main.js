@@ -13,6 +13,8 @@ import {
 import { createTwinTowers } from './models/Towers.js';
 import { createPlaza } from './models/Plaza.js';
 import { createAirplane } from './models/Airplane.js';
+import { createEnvironment } from './scene/Environment.js';
+import { createTributeInLight } from './models/TributeInLight.js';
 
 class WTCApp {
   constructor() {
@@ -28,10 +30,11 @@ class WTCApp {
     this.initCamera();
     this.initRenderer();
     this.initControls();
-    this.initLights();
+    this.initEnvironment();
     this.initProceduralTextures();
     this.initPlaza();
     this.initTwinTowers();
+    this.initTributeInLight();
     this.initAirplane();
     this.initUIEvents();
     this.initResizeHandler();
@@ -97,36 +100,39 @@ class WTCApp {
   }
 
   /**
-   * 初始化環境光與主日光
+   * 初始化環境光照、動態天幕與大氣系統 (Task 6: Environment & Weather System)
+   */
+  initEnvironment() {
+    this.environment = createEnvironment(this.scene, this.renderer);
+    this.sunLight = this.environment.lights.dirLight;
+    this.ambientLight = this.environment.lights.ambientLight;
+    this.hemiLight = this.environment.lights.hemiLight;
+    window.wtcEnvironment = this.environment;
+  }
+
+  /**
+   * 相容方法：相容原有 initLights 呼叫
    */
   initLights() {
-    // 基礎環境光
-    this.ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
-    this.scene.add(this.ambientLight);
+    if (!this.environment) {
+      this.initEnvironment();
+    }
+  }
 
-    // 主方向光 (模擬陽光/天光並投射大面積柔和陰影)
-    this.sunLight = new THREE.DirectionalLight(0xfff5e6, 2.2);
-    this.sunLight.position.set(300, 650, 400);
-    this.sunLight.castShadow = true;
-
-    // 陰影相機視野涵蓋雙塔與整座廣場
-    const d = 400;
-    this.sunLight.shadow.camera.left = -d;
-    this.sunLight.shadow.camera.right = d;
-    this.sunLight.shadow.camera.top = d;
-    this.sunLight.shadow.camera.bottom = -d;
-    this.sunLight.shadow.camera.near = 50;
-    this.sunLight.shadow.camera.far = 1200;
-    this.sunLight.shadow.mapSize.width = 2048;
-    this.sunLight.shadow.mapSize.height = 2048;
-    this.sunLight.shadow.bias = -0.0005;
-
-    this.scene.add(this.sunLight);
-
-    // 輔助天光 (半球光模擬天空反射)
-    this.hemiLight = new THREE.HemisphereLight(0x7ec0ee, 0x1a2634, 0.6);
-    this.hemiLight.position.set(0, 500, 0);
-    this.scene.add(this.hemiLight);
+  /**
+   * 初始化雙塔紀念天際光柱 (Task 6: Tribute in Light Memorial Beams)
+   */
+  initTributeInLight() {
+    this.tributeInLight = createTributeInLight({
+      northPos: { x: -70, y: 415, z: -70 },
+      southPos: { x: 70, y: 415, z: 70 },
+      height: 1200,
+      radiusBottom: 19,
+      radiusTop: 28,
+      visible: false
+    });
+    this.scene.add(this.tributeInLight.group);
+    window.wtcTributeInLight = this.tributeInLight;
   }
 
   /**
@@ -222,8 +228,29 @@ class WTCApp {
         btn.classList.add('active');
         const weather = btn.dataset.weather;
         const isNight = weather === 'night';
+
+        // 動態氣候系統切換 (Task 6)
+        if (this.environment) {
+          this.environment.setWeather(weather);
+        }
+
+        // 雙塔立面辦公室日夜燈光切換 (Task 3)
         if (this.towers) {
           this.towers.setNightMode(isNight);
+        }
+
+        // 紀念天際光柱：夜景模式預設點亮，其他模式關閉 (Task 6)
+        const tributeSwitch = document.getElementById('btn-toggle-tribute');
+        if (this.tributeInLight && tributeSwitch) {
+          if (isNight) {
+            tributeSwitch.classList.add('active');
+            tributeSwitch.setAttribute('aria-checked', 'true');
+            this.tributeInLight.setVisible(true);
+          } else {
+            tributeSwitch.classList.remove('active');
+            tributeSwitch.setAttribute('aria-checked', 'false');
+            this.tributeInLight.setVisible(false);
+          }
         }
       });
     });
@@ -275,6 +302,8 @@ class WTCApp {
 
         if (sw.id === 'btn-toggle-xray' && this.towers) {
           this.towers.setXRayMode(isActive);
+        } else if (sw.id === 'btn-toggle-tribute' && this.tributeInLight) {
+          this.tributeInLight.setVisible(isActive);
         }
       });
     });
@@ -358,6 +387,16 @@ class WTCApp {
     // 動態更新遠景民航機航行與航行燈 (Task 5: Scenic Background Airplane)
     if (this.airplane && this.airplane.update) {
       this.airplane.update(delta, this.clock.getElapsedTime());
+    }
+
+    // 動態更新大氣天幕、漂浮雲群、閃爍星空與雨絲粒子 (Task 6: Environment & Weather)
+    if (this.environment && this.environment.update) {
+      this.environment.update(delta);
+    }
+
+    // 動態更新紀念天際光柱呼吸律動與光塵微粒 (Task 6: Tribute in Light)
+    if (this.tributeInLight && this.tributeInLight.update) {
+      this.tributeInLight.update(this.clock.getElapsedTime());
     }
 
     // 渲染場景
