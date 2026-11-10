@@ -5,6 +5,11 @@
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import {
+  createWindowTexture,
+  createPlazaPavingTexture,
+  createWaterBumpTexture
+} from './utils/ProceduralTextures.js';
 
 class WTCApp {
   constructor() {
@@ -21,6 +26,7 @@ class WTCApp {
     this.initRenderer();
     this.initControls();
     this.initLights();
+    this.initProceduralTextures();
     this.initPlaceholderGround();
     this.initUIEvents();
     this.initResizeHandler();
@@ -119,10 +125,25 @@ class WTCApp {
   }
 
   /**
-   * 建立基礎地面網格與參考定位，供 Task 1 驗證
+   * 初始化程序化紋理生成器 (Task 2: Procedural Textures)
+   */
+  initProceduralTextures() {
+    this.textures = {
+      windowDay: createWindowTexture(false),
+      windowNight: createWindowTexture(true),
+      plazaPaving: createPlazaPavingTexture(),
+      waterBump: createWaterBumpTexture()
+    };
+
+    // 掛載至 window 便於除錯與後續模組共用
+    window.wtcTextures = this.textures;
+  }
+
+  /**
+   * 建立基礎地面網格與參考定位，供 Task 1/2 驗證
    */
   initPlaceholderGround() {
-    // 曼哈頓街區參考地面
+    // 曼哈頓街區外圍參考地面
     const groundGeo = new THREE.PlaneGeometry(1600, 1600);
     const groundMat = new THREE.MeshStandardMaterial({
       color: 0x111622,
@@ -133,6 +154,55 @@ class WTCApp {
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     this.scene.add(ground);
+
+    // 奧斯汀·J·托賓廣場放射狀花崗岩鋪石地面 (Austin J. Tobin Plaza preview)
+    const plazaGeo = new THREE.CircleGeometry(160, 64);
+    const plazaMat = new THREE.MeshStandardMaterial({
+      map: this.textures.plazaPaving,
+      roughness: 0.75,
+      metalness: 0.15
+    });
+    const plazaMesh = new THREE.Mesh(plazaGeo, plazaMat);
+    plazaMesh.rotation.x = -Math.PI / 2;
+    plazaMesh.position.y = 0.3;
+    plazaMesh.receiveShadow = true;
+    this.scene.add(plazaMesh);
+
+    // 奧斯汀廣場噴泉水池 (Water Bump Map 凹凸貼圖驗證)
+    const fountainGeo = new THREE.CircleGeometry(25, 48);
+    const fountainMat = new THREE.MeshStandardMaterial({
+      color: 0x16384c,
+      roughness: 0.15,
+      metalness: 0.85,
+      bumpMap: this.textures.waterBump,
+      bumpScale: 0.4
+    });
+    this.fountainMesh = new THREE.Mesh(fountainGeo, fountainMat);
+    this.fountainMesh.rotation.x = -Math.PI / 2;
+    this.fountainMesh.position.y = 0.45;
+    this.scene.add(this.fountainMesh);
+
+    // 雙塔立面預覽 (驗證 110 層窗戶立面貼圖在 MeshStandardMaterial 上的解析度與渲染表現)
+    const towerGeo = new THREE.BoxGeometry(63.14, 415, 63.14);
+    this.towerMat = new THREE.MeshStandardMaterial({
+      map: this.textures.windowDay,
+      roughness: 0.35,
+      metalness: 0.65
+    });
+
+    // 北塔 (1 WTC)
+    const northTower = new THREE.Mesh(towerGeo, this.towerMat);
+    northTower.position.set(-65, 415 / 2, -65);
+    northTower.castShadow = true;
+    northTower.receiveShadow = true;
+    this.scene.add(northTower);
+
+    // 南塔 (2 WTC)
+    const southTower = new THREE.Mesh(towerGeo, this.towerMat);
+    southTower.position.set(65, 415 / 2, 65);
+    southTower.castShadow = true;
+    southTower.receiveShadow = true;
+    this.scene.add(southTower);
 
     // 經典網格輔助 (細密參考刻度)
     const grid = new THREE.GridHelper(1000, 50, 0x38bdf8, 0x1f293d);
@@ -172,12 +242,18 @@ class WTCApp {
       });
     }
 
-    // 天氣切換按鈕互斥高亮
+    // 天氣切換按鈕互斥高亮與日夜窗戶貼圖切換驗證
     const weatherBtns = document.querySelectorAll('.weather-btn');
     weatherBtns.forEach((btn) => {
       btn.addEventListener('click', () => {
         weatherBtns.forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
+        const weather = btn.dataset.weather;
+        if (this.towerMat) {
+          const isNight = weather === 'night';
+          this.towerMat.map = isNight ? this.textures.windowNight : this.textures.windowDay;
+          this.towerMat.needsUpdate = true;
+        }
       });
     });
 
@@ -252,6 +328,11 @@ class WTCApp {
     // 更新軌道控制器
     if (this.controls && this.controls.enabled) {
       this.controls.update();
+    }
+
+    // 動態更新噴泉微波水紋 (Task 2)
+    if (this.textures?.waterBump?.updateRipples) {
+      this.textures.waterBump.updateRipples(this.clock.getElapsedTime());
     }
 
     // 渲染場景
