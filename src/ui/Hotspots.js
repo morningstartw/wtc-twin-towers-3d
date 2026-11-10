@@ -125,6 +125,8 @@ export function createHotspots(scene, camera, domContainer, onFocusLocation) {
   const container = domContainer || document.getElementById('hotspot-markers-container');
   let visible = true;
   const tempVec = new THREE.Vector3();
+  const camDir = new THREE.Vector3();
+  const toCamera = new THREE.Vector3();
 
   // 取得彈窗元素
   const modal = document.getElementById('hotspot-modal');
@@ -245,18 +247,26 @@ export function createHotspots(scene, camera, domContainer, onFocusLocation) {
     const width = window.innerWidth;
     const height = window.innerHeight;
 
+    camera.getWorldDirection(camDir);
+
     for (let i = 0; i < hotspotItems.length; i++) {
       const item = hotspotItems[i];
+
+      // 檢查是否在相機前方 (在世界座標中，相機到物體向量與相機視向內積需 > 0)
+      toCamera.copy(item.position).sub(camera.position);
+      if (toCamera.dot(camDir) <= 0) {
+        item.element.style.display = 'none';
+        continue;
+      }
+
       tempVec.copy(item.position);
 
       // 投影至正規化設備座標 (NDC: [-1, 1])
       tempVec.project(camera);
 
-      // 檢驗是否在相機前方的視錐內
-      // NDC z > 1.0 代表在相機背後或遠裁剪面之外
-      const isBehindCamera = tempVec.z > 1.0;
+      // 檢驗是否在可視視錐邊界內
       const inFrustum =
-        !isBehindCamera &&
+        tempVec.z <= 1.0 &&
         tempVec.x >= -1.05 &&
         tempVec.x <= 1.05 &&
         tempVec.y >= -1.05 &&

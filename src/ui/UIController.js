@@ -309,16 +309,32 @@ export class UIController {
           break;
 
         case '1':
-          this.triggerWeatherByIndex(0);
+          if (e.shiftKey) {
+            this.triggerWeatherByIndex(0);
+          } else {
+            this.triggerViewByName('plaza');
+          }
           break;
         case '2':
-          this.triggerWeatherByIndex(1);
+          if (e.shiftKey) {
+            this.triggerWeatherByIndex(1);
+          } else {
+            this.triggerViewByName('aerial');
+          }
           break;
         case '3':
-          this.triggerWeatherByIndex(2);
+          if (e.shiftKey) {
+            this.triggerWeatherByIndex(2);
+          } else {
+            this.triggerViewByName('deck');
+          }
           break;
         case '4':
-          this.triggerWeatherByIndex(3);
+          if (e.shiftKey) {
+            this.triggerWeatherByIndex(3);
+          } else {
+            this.triggerViewByName('antenna');
+          }
           break;
         case '5':
           this.triggerViewByName('hudson');

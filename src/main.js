@@ -321,6 +321,11 @@ class WTCApp {
           this.towers.setNightMode(isNight);
         }
 
+        // 托賓廣場路燈日夜切換
+        if (this.plaza && this.plaza.setNightMode) {
+          this.plaza.setNightMode(isNight);
+        }
+
         // 世貿中心周邊附屬建築群日夜燈光切換 (Expansion Task 1)
         if (this.wtcComplex) {
           this.wtcComplex.setNightMode(isNight);
@@ -520,7 +525,7 @@ class WTCApp {
 
     // 動態更新大氣天幕、漂浮雲群、閃爍星空與雨絲粒子 (Task 6: Environment & Weather)
     if (this.environment && this.environment.update) {
-      this.environment.update(delta);
+      this.environment.update(delta, this.camera);
     }
 
     // 動態更新紀念天際光柱呼吸律動與光塵微粒 (Task 6: Tribute in Light)

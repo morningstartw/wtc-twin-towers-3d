@@ -97,19 +97,39 @@ export async function captureScreenshot(renderer, scene, camera, options = {}) {
       renderer.render(scene, camera);
     }
 
-    // 6. 讀取畫布內容並建立下載
-    const dataUrl = renderer.domElement.toDataURL('image/png');
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.style.display = 'none';
-    downloadAnchor.download = fileName;
-    downloadAnchor.href = dataUrl;
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    
-    // 延遲移除 DOM 下載元素
-    setTimeout(() => {
-      document.body.removeChild(downloadAnchor);
-    }, 100);
+    // 6. 讀取畫布內容並建立下載 (優先使用 toBlob 避免 4K 大字串記憶體負擔)
+    await new Promise((resolve) => {
+      const triggerDownload = (url) => {
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.style.display = 'none';
+        downloadAnchor.download = fileName;
+        downloadAnchor.href = url;
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+
+        setTimeout(() => {
+          if (downloadAnchor.parentNode) {
+            downloadAnchor.parentNode.removeChild(downloadAnchor);
+          }
+          if (url.startsWith('blob:')) {
+            URL.revokeObjectURL(url);
+          }
+          resolve();
+        }, 150);
+      };
+
+      if (renderer.domElement.toBlob) {
+        renderer.domElement.toBlob((blob) => {
+          if (blob) {
+            triggerDownload(URL.createObjectURL(blob));
+          } else {
+            triggerDownload(renderer.domElement.toDataURL('image/png'));
+          }
+        }, 'image/png');
+      } else {
+        triggerDownload(renderer.domElement.toDataURL('image/png'));
+      }
+    });
 
     if (typeof onSuccess === 'function') {
       onSuccess();

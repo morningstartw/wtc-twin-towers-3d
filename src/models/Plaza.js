@@ -580,6 +580,17 @@ export function createPlaza(options = {}) {
 
   // --- 8. 高效能微動態更新函式 (High-Performance UV Scroll Animation) ---
   /**
+   * 切換日夜燈光模式
+   * @param {boolean} isNight
+   */
+  const setNightMode = function (isNight) {
+    if (lampLightMat) {
+      lampLightMat.emissiveIntensity = isNight ? 2.5 : 0.0;
+      lampLightMat.needsUpdate = true;
+    }
+  };
+
+  /**
    * 動態更新水面紋理與噴泉雕塑微動態
    * @param {number} delta - 幀間隔秒數
    */
@@ -599,6 +610,7 @@ export function createPlaza(options = {}) {
   return {
     group: plazaGroup,
     update,
+    setNightMode,
     waterMesh,
     theSphere: theSphereGroup
   };

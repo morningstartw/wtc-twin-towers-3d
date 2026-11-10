@@ -12,13 +12,30 @@
 import * as THREE from 'three';
 
 /**
+ * 跨環境安全建立 Canvas
+ */
+function createSafeCanvas(width, height) {
+  if (typeof document !== 'undefined' && document.createElement) {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    return canvas;
+  }
+  if (typeof OffscreenCanvas !== 'undefined') {
+    return new OffscreenCanvas(width, height);
+  }
+  return null;
+}
+
+/**
  * 建立雨絲粒子紋理 (垂直拉長半透明漸層)
- * @returns {THREE.CanvasTexture}
+ * @returns {THREE.Texture}
  */
 function createRainDropTexture() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 16;
-  canvas.height = 64;
+  const canvas = createSafeCanvas(16, 64);
+  if (!canvas) {
+    return new THREE.Texture();
+  }
   const ctx = canvas.getContext('2d');
 
   const grad = ctx.createLinearGradient(0, 0, 0, 64);
@@ -519,8 +536,14 @@ export function createEnvironment(scene, renderer) {
       setWeather(mode);
     },
     setWeather,
-    update(delta) {
+    update(delta, camera) {
       totalTime += delta;
+      if (camera && skyDome && skyDome.mesh) {
+        skyDome.mesh.position.copy(camera.position);
+      }
+      if (camera && starfield && starfield.points) {
+        starfield.points.position.copy(camera.position);
+      }
       clouds.update(delta);
       starfield.update(totalTime);
       rainSystem.update(delta);
