@@ -4,7 +4,6 @@
  */
 
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import {
   createWindowTexture,
   createPlazaPavingTexture,
@@ -15,6 +14,8 @@ import { createPlaza } from './models/Plaza.js';
 import { createAirplane } from './models/Airplane.js';
 import { createEnvironment } from './scene/Environment.js';
 import { createTributeInLight } from './models/TributeInLight.js';
+import { setupPostProcessing } from './scene/PostProcessing.js';
+import { createCameraManager } from './scene/CameraManager.js';
 
 class WTCApp {
   constructor() {
@@ -29,6 +30,7 @@ class WTCApp {
     this.initScene();
     this.initCamera();
     this.initRenderer();
+    this.initPostProcessing();
     this.initControls();
     this.initEnvironment();
     this.initProceduralTextures();
@@ -87,16 +89,24 @@ class WTCApp {
   }
 
   /**
-   * 初始化軌道相機控制器
+   * 初始化後製處理管線 (Task 7: UnrealBloomPass & OutputPass)
+   */
+  initPostProcessing() {
+    this.postProcessing = setupPostProcessing(this.renderer, this.scene, this.camera, {
+      strength: 0.35, // 白天預設低輝光
+      radius: 0.45,
+      threshold: 0.70
+    });
+    window.wtcPostProcessing = this.postProcessing;
+  }
+
+  /**
+   * 初始化相機控制器與漫遊管理器 (Task 7: CameraManager & Orbit/Fly)
    */
   initControls() {
-    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-    this.controls.enableDamping = true;
-    this.controls.dampingFactor = 0.05;
-    this.controls.target.set(0, 160, 0); // 瞄準雙塔中部高度
-    this.controls.maxPolarAngle = Math.PI / 2 + 0.03; // 防止沉入地下過深
-    this.controls.minDistance = 20;
-    this.controls.maxDistance = 3500;
+    this.cameraManager = createCameraManager(this.camera, this.renderer.domElement);
+    this.controls = this.cameraManager.controls;
+    window.wtcCameraManager = this.cameraManager;
   }
 
   /**
@@ -234,6 +244,18 @@ class WTCApp {
           this.environment.setWeather(weather);
         }
 
+        // 自動調整後製泛光強度 (Task 7)
+        if (this.postProcessing) {
+          const bloomStrengthMap = {
+            night: 0.9,
+            sunset: 0.6,
+            day: 0.35,
+            rain: 0.45
+          };
+          const strength = bloomStrengthMap[weather] !== undefined ? bloomStrengthMap[weather] : 0.75;
+          this.postProcessing.setBloomStrength(strength);
+        }
+
         // 雙塔立面辦公室日夜燈光切換 (Task 3)
         if (this.towers) {
           this.towers.setNightMode(isNight);
@@ -266,7 +288,7 @@ class WTCApp {
       });
     });
 
-    // 相機模式按鈕互斥高亮
+    // 相機模式按鈕互斥高亮與模式切換 (Task 7)
     const modeBtns = document.querySelectorAll('.mode-btn');
     const flyGuide = document.getElementById('first-person-guide');
     modeBtns.forEach((btn) => {
@@ -274,8 +296,13 @@ class WTCApp {
         modeBtns.forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
         const mode = btn.dataset.mode;
+        
+        if (this.cameraManager) {
+          this.cameraManager.setMode(mode === 'orbit' ? 'orbit' : 'fly');
+        }
+
         if (flyGuide) {
-          if (mode === 'fly') {
+          if (mode === 'fly' || mode === 'walk') {
             flyGuide.classList.remove('hidden');
           } else {
             flyGuide.classList.add('hidden');
@@ -289,7 +316,12 @@ class WTCApp {
     if (exitFlyBtn) {
       exitFlyBtn.addEventListener('click', () => {
         const orbitBtn = document.querySelector('.mode-btn[data-mode="orbit"]');
-        if (orbitBtn) orbitBtn.click();
+        if (orbitBtn) {
+          orbitBtn.click();
+        } else if (this.cameraManager) {
+          this.cameraManager.setMode('orbit');
+          if (flyGuide) flyGuide.classList.add('hidden');
+        }
       });
     }
 
@@ -308,6 +340,24 @@ class WTCApp {
       });
     });
 
+    // 4K 寫真截圖匯出按鈕
+    const screenshotBtn = document.getElementById('btn-screenshot');
+    if (screenshotBtn) {
+      screenshotBtn.addEventListener('click', () => {
+        // 先確保畫面後製最新一幀
+        if (this.postProcessing) {
+          this.postProcessing.render();
+        } else {
+          this.renderer.render(this.scene, this.camera);
+        }
+        const dataUrl = this.renderer.domElement.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.download = `WTC_Twin_Towers_${Date.now()}.png`;
+        link.href = dataUrl;
+        link.click();
+      });
+    }
+
     // 熱點資訊關閉按鈕
     const closeHotspotBtn = document.getElementById('btn-close-hotspot');
     const hotspotModal = document.getElementById('hotspot-modal');
@@ -319,32 +369,29 @@ class WTCApp {
   }
 
   /**
-   * 切換預設經典導覽視角
+   * 切換預設經典導覽視角 (Task 7: 平滑飛行過渡)
    * @param {'plaza'|'aerial'|'deck'|'antenna'} view
    */
   switchPresetView(view) {
-    if (!this.camera || !this.controls) return;
+    if (this.cameraManager) {
+      this.cameraManager.flyTo(view, 1.5, () => {
+        // 飛行到達後的通知或回呼
+      });
 
-    switch (view) {
-      case 'deck': // 2 WTC 南塔 110 樓室外觀景台近景
-        this.camera.position.set(70, 421, 105);
-        this.controls.target.set(70, 417, 70);
-        break;
-      case 'antenna': // 1 WTC 北塔 526 米通訊天線頂部近景
-        this.camera.position.set(-70, 532, -20);
-        this.controls.target.set(-70, 480, -70);
-        break;
-      case 'plaza': // 奧斯汀廣場中央地面仰望雙塔雙影
-        this.camera.position.set(0, 3.2, 28);
-        this.controls.target.set(0, 220, 0);
-        break;
-      case 'aerial': // 曼哈頓下城全景鳥瞰
-      default:
-        this.camera.position.set(380, 240, 480);
-        this.controls.target.set(0, 160, 0);
-        break;
+      // 同步 UI 模式按鈕狀態回軌道檢視
+      const modeBtns = document.querySelectorAll('.mode-btn');
+      const flyGuide = document.getElementById('first-person-guide');
+      modeBtns.forEach((b) => {
+        if (b.dataset.mode === 'orbit') {
+          b.classList.add('active');
+        } else {
+          b.classList.remove('active');
+        }
+      });
+      if (flyGuide) {
+        flyGuide.classList.add('hidden');
+      }
     }
-    this.controls.update();
   }
 
   /**
@@ -358,6 +405,11 @@ class WTCApp {
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(width, height);
       this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+      // 同步更新後製處理管線解析度
+      if (this.postProcessing) {
+        this.postProcessing.resize(width, height);
+      }
     });
   }
 
@@ -369,8 +421,10 @@ class WTCApp {
 
     const delta = this.clock.getDelta();
 
-    // 更新軌道控制器
-    if (this.controls && this.controls.enabled) {
+    // 更新相機控制器 (Task 7: 支援平滑飛行過渡與第一人稱漫遊運動)
+    if (this.cameraManager) {
+      this.cameraManager.update(delta);
+    } else if (this.controls && this.controls.enabled) {
       this.controls.update();
     }
 
@@ -399,8 +453,12 @@ class WTCApp {
       this.tributeInLight.update(this.clock.getElapsedTime());
     }
 
-    // 渲染場景
-    this.renderer.render(this.scene, this.camera);
+    // 後製管線渲染 (Task 7: EffectComposer & UnrealBloomPass)
+    if (this.postProcessing) {
+      this.postProcessing.render();
+    } else {
+      this.renderer.render(this.scene, this.camera);
+    }
 
     // 更新 FPS 計數器
     this.frameCount++;
