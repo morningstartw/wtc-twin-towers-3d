@@ -29,6 +29,7 @@ class WTCApp {
     this.fpsElement = document.getElementById('fps-counter');
     this.frameCount = 0;
     this.lastFpsUpdate = performance.now();
+    this.firstFrameRendered = false;
 
     this.initScene();
     this.initCamera();
@@ -330,6 +331,30 @@ class WTCApp {
   }
 
   /**
+   * 初始載入畫面淡出與歡迎導覽 Toast
+   */
+  hideLoadingScreen() {
+    const loadingOverlay = document.getElementById('loading-overlay');
+    if (loadingOverlay) {
+      loadingOverlay.classList.add('fade-out');
+      setTimeout(() => {
+        loadingOverlay.style.display = 'none';
+      }, 700);
+    }
+
+    // 延遲跳出迎賓 Toast，引導使用者操作
+    setTimeout(() => {
+      if (this.uiController) {
+        this.uiController.showToast(
+          '歡迎造訪世界貿易中心 (1973–2001) 3D 紀念導覽！可按住滑鼠環顧，或按 W/A/S/D 漫遊',
+          'info',
+          4500
+        );
+      }
+    }, 450);
+  }
+
+  /**
    * 監聽視窗縮放
    */
   initResizeHandler() {
@@ -398,6 +423,12 @@ class WTCApp {
       this.postProcessing.render();
     } else {
       this.renderer.render(this.scene, this.camera);
+    }
+
+    // 首幀繪製完成後平滑隱藏載入畫面並跳出迎賓導覽
+    if (!this.firstFrameRendered) {
+      this.firstFrameRendered = true;
+      this.hideLoadingScreen();
     }
 
     // 更新 FPS 計數器
