@@ -12,6 +12,7 @@ import {
 } from './utils/ProceduralTextures.js';
 import { createTwinTowers } from './models/Towers.js';
 import { createPlaza } from './models/Plaza.js';
+import { createAirplane } from './models/Airplane.js';
 
 class WTCApp {
   constructor() {
@@ -31,6 +32,7 @@ class WTCApp {
     this.initProceduralTextures();
     this.initPlaza();
     this.initTwinTowers();
+    this.initAirplane();
     this.initUIEvents();
     this.initResizeHandler();
 
@@ -169,6 +171,20 @@ class WTCApp {
 
     this.scene.add(this.towers.group);
     window.wtcTowers = this.towers;
+  }
+
+  /**
+   * 初始化遠景平穩巡航民航機 (Task 5: Scenic Background Airplane)
+   */
+  initAirplane() {
+    this.airplane = createAirplane({
+      radiusX: 520,
+      radiusZ: 480,
+      altitude: 320,
+      speed: 0.045
+    });
+    this.scene.add(this.airplane.mesh);
+    window.wtcAirplane = this.airplane;
   }
 
   /**
@@ -337,6 +353,11 @@ class WTCApp {
     // 動態更新雙塔特色 (Task 3: 航空障礙燈脈衝閃爍)
     if (this.towers && this.towers.update) {
       this.towers.update(delta);
+    }
+
+    // 動態更新遠景民航機航行與航行燈 (Task 5: Scenic Background Airplane)
+    if (this.airplane && this.airplane.update) {
+      this.airplane.update(delta, this.clock.getElapsedTime());
     }
 
     // 渲染場景
