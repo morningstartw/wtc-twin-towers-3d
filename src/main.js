@@ -14,6 +14,7 @@ import { createWTCComplex } from './models/WTCComplex.js';
 import { createWorldFinancialCenter } from './models/WorldFinancialCenter.js';
 import { createHudsonRiver } from './models/HudsonRiver.js';
 import { createUrbanStreets } from './models/UrbanStreets.js';
+import { createManhattanSkyline } from './models/ManhattanSkyline.js';
 import { createPlaza } from './models/Plaza.js';
 import { createAirplane } from './models/Airplane.js';
 import { createEnvironment } from './scene/Environment.js';
@@ -48,6 +49,7 @@ class WTCApp {
     this.initWorldFinancialCenter();
     this.initHudsonRiver();
     this.initUrbanStreets();
+    this.initManhattanSkyline();
     this.initTributeInLight();
     this.initAirplane();
     this.initHotspots();
@@ -247,6 +249,17 @@ class WTCApp {
   }
 
   /**
+   * 初始化曼哈頓下城背景天際線群 (Expansion Task 5)
+   */
+  initManhattanSkyline() {
+    this.manhattanSkyline = createManhattanSkyline({
+      isNight: false
+    });
+    this.scene.add(this.manhattanSkyline.group);
+    window.wtcManhattanSkyline = this.manhattanSkyline;
+  }
+
+  /**
    * 初始化遠景平穩巡航民航機 (Task 5: Scenic Background Airplane)
    */
   initAirplane() {
@@ -326,6 +339,11 @@ class WTCApp {
         // 西街交通光軌與街燈日夜切換 (Expansion Task 4)
         if (this.urbanStreets && this.urbanStreets.setNightMode) {
           this.urbanStreets.setNightMode(isNight);
+        }
+
+        // 曼哈頓下城背景天際線群日夜切換 (Expansion Task 5)
+        if (this.manhattanSkyline && this.manhattanSkyline.setNightMode) {
+          this.manhattanSkyline.setNightMode(isNight);
         }
 
         // 紀念天際光柱：夜景模式預設點亮，其他模式關閉 (Task 6)
@@ -493,6 +511,11 @@ class WTCApp {
     // 動態更新西街雙向車流光軌高速流動循環 (Expansion Task 4)
     if (this.urbanStreets && this.urbanStreets.update) {
       this.urbanStreets.update(delta);
+    }
+
+    // 動態更新曼哈頓下城天際線高空航空警示燈 (Expansion Task 5)
+    if (this.manhattanSkyline && this.manhattanSkyline.update) {
+      this.manhattanSkyline.update(delta, this.clock.getElapsedTime());
     }
 
     // 動態更新大氣天幕、漂浮雲群、閃爍星空與雨絲粒子 (Task 6: Environment & Weather)
