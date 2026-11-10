@@ -10,6 +10,7 @@ import {
   createWaterBumpTexture
 } from './utils/ProceduralTextures.js';
 import { createTwinTowers } from './models/Towers.js';
+import { createWTCComplex } from './models/WTCComplex.js';
 import { createPlaza } from './models/Plaza.js';
 import { createAirplane } from './models/Airplane.js';
 import { createEnvironment } from './scene/Environment.js';
@@ -40,6 +41,7 @@ class WTCApp {
     this.initProceduralTextures();
     this.initPlaza();
     this.initTwinTowers();
+    this.initWTCComplex();
     this.initTributeInLight();
     this.initAirplane();
     this.initHotspots();
@@ -195,6 +197,17 @@ class WTCApp {
   }
 
   /**
+   * 初始化世貿中心周邊附屬建築群 WTC 3, 4, 5, 6, 7 (Expansion Task 1)
+   */
+  initWTCComplex() {
+    this.wtcComplex = createWTCComplex({
+      isNight: false
+    });
+    this.scene.add(this.wtcComplex.group);
+    window.wtcComplex = this.wtcComplex;
+  }
+
+  /**
    * 初始化遠景平穩巡航民航機 (Task 5: Scenic Background Airplane)
    */
   initAirplane() {
@@ -254,6 +267,11 @@ class WTCApp {
         // 雙塔日夜燈光切換 (Task 3)
         if (this.towers) {
           this.towers.setNightMode(isNight);
+        }
+
+        // 世貿中心周邊附屬建築群日夜燈光切換 (Expansion Task 1)
+        if (this.wtcComplex) {
+          this.wtcComplex.setNightMode(isNight);
         }
 
         // 紀念天際光柱：夜景模式預設點亮，其他模式關閉 (Task 6)
@@ -401,6 +419,11 @@ class WTCApp {
     // 動態更新遠景民航機航行與航行燈 (Task 5: Scenic Background Airplane)
     if (this.airplane && this.airplane.update) {
       this.airplane.update(delta, this.clock.getElapsedTime());
+    }
+
+    // 動態更新世貿中心周邊附屬建築群航空警示燈 (Expansion Task 1)
+    if (this.wtcComplex && this.wtcComplex.update) {
+      this.wtcComplex.update(delta, this.clock.getElapsedTime());
     }
 
     // 動態更新大氣天幕、漂浮雲群、閃爍星空與雨絲粒子 (Task 6: Environment & Weather)
