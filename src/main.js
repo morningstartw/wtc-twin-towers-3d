@@ -10,6 +10,7 @@ import {
   createPlazaPavingTexture,
   createWaterBumpTexture
 } from './utils/ProceduralTextures.js';
+import { createTwinTowers } from './models/Towers.js';
 
 class WTCApp {
   constructor() {
@@ -28,6 +29,7 @@ class WTCApp {
     this.initLights();
     this.initProceduralTextures();
     this.initPlaceholderGround();
+    this.initTwinTowers();
     this.initUIEvents();
     this.initResizeHandler();
 
@@ -182,28 +184,6 @@ class WTCApp {
     this.fountainMesh.position.y = 0.45;
     this.scene.add(this.fountainMesh);
 
-    // 雙塔立面預覽 (驗證 110 層窗戶立面貼圖在 MeshStandardMaterial 上的解析度與渲染表現)
-    const towerGeo = new THREE.BoxGeometry(63.14, 415, 63.14);
-    this.towerMat = new THREE.MeshStandardMaterial({
-      map: this.textures.windowDay,
-      roughness: 0.35,
-      metalness: 0.65
-    });
-
-    // 北塔 (1 WTC)
-    const northTower = new THREE.Mesh(towerGeo, this.towerMat);
-    northTower.position.set(-65, 415 / 2, -65);
-    northTower.castShadow = true;
-    northTower.receiveShadow = true;
-    this.scene.add(northTower);
-
-    // 南塔 (2 WTC)
-    const southTower = new THREE.Mesh(towerGeo, this.towerMat);
-    southTower.position.set(65, 415 / 2, 65);
-    southTower.castShadow = true;
-    southTower.receiveShadow = true;
-    this.scene.add(southTower);
-
     // 經典網格輔助 (細密參考刻度)
     const grid = new THREE.GridHelper(1000, 50, 0x38bdf8, 0x1f293d);
     grid.position.y = 0.2;
@@ -213,6 +193,22 @@ class WTCApp {
     const axes = new THREE.AxesHelper(50);
     axes.position.y = 0.5;
     this.scene.add(axes);
+  }
+
+  /**
+   * 初始化雙塔主體、密柱立面、尖頂天線與內部核心 (Task 3: Twin Towers Architecture)
+   */
+  initTwinTowers() {
+    this.towers = createTwinTowers({
+      windowTextureDay: this.textures.windowDay,
+      windowTextureNight: this.textures.windowNight,
+      northTowerPos: { x: -70, y: 0, z: -70 },
+      southTowerPos: { x: 70, y: 0, z: 70 },
+      isNight: false
+    });
+
+    this.scene.add(this.towers.group);
+    window.wtcTowers = this.towers;
   }
 
   /**
@@ -242,18 +238,28 @@ class WTCApp {
       });
     }
 
-    // 天氣切換按鈕互斥高亮與日夜窗戶貼圖切換驗證
+    // 天氣切換按鈕互斥高亮與日夜窗戶貼圖切換
     const weatherBtns = document.querySelectorAll('.weather-btn');
     weatherBtns.forEach((btn) => {
       btn.addEventListener('click', () => {
         weatherBtns.forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
         const weather = btn.dataset.weather;
-        if (this.towerMat) {
-          const isNight = weather === 'night';
-          this.towerMat.map = isNight ? this.textures.windowNight : this.textures.windowDay;
-          this.towerMat.needsUpdate = true;
+        const isNight = weather === 'night';
+        if (this.towers) {
+          this.towers.setNightMode(isNight);
         }
+      });
+    });
+
+    // 經典導覽視角切換 (南塔觀景台 / 北塔天線 / 廣場 / 全景)
+    const viewBtns = document.querySelectorAll('.view-btn');
+    viewBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        viewBtns.forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        const view = btn.dataset.view;
+        this.switchPresetView(view);
       });
     });
 
@@ -290,6 +296,10 @@ class WTCApp {
       sw.addEventListener('click', () => {
         const isActive = sw.classList.toggle('active');
         sw.setAttribute('aria-checked', isActive ? 'true' : 'false');
+
+        if (sw.id === 'btn-toggle-xray' && this.towers) {
+          this.towers.setXRayMode(isActive);
+        }
       });
     });
 
@@ -301,6 +311,35 @@ class WTCApp {
         hotspotModal.classList.add('hidden');
       });
     }
+  }
+
+  /**
+   * 切換預設經典導覽視角
+   * @param {'plaza'|'aerial'|'deck'|'antenna'} view
+   */
+  switchPresetView(view) {
+    if (!this.camera || !this.controls) return;
+
+    switch (view) {
+      case 'deck': // 2 WTC 南塔 110 樓室外觀景台近景
+        this.camera.position.set(70, 421, 105);
+        this.controls.target.set(70, 417, 70);
+        break;
+      case 'antenna': // 1 WTC 北塔 526 米通訊天線頂部近景
+        this.camera.position.set(-70, 532, -20);
+        this.controls.target.set(-70, 480, -70);
+        break;
+      case 'plaza': // 奧斯汀廣場中央地面仰望雙塔雙影
+        this.camera.position.set(0, 3, 25);
+        this.controls.target.set(0, 220, 0);
+        break;
+      case 'aerial': // 曼哈頓下城全景鳥瞰
+      default:
+        this.camera.position.set(380, 240, 480);
+        this.controls.target.set(0, 160, 0);
+        break;
+    }
+    this.controls.update();
   }
 
   /**
@@ -333,6 +372,11 @@ class WTCApp {
     // 動態更新噴泉微波水紋 (Task 2)
     if (this.textures?.waterBump?.updateRipples) {
       this.textures.waterBump.updateRipples(this.clock.getElapsedTime());
+    }
+
+    // 動態更新雙塔特色 (Task 3: 航空障礙燈脈衝閃爍)
+    if (this.towers && this.towers.update) {
+      this.towers.update(delta);
     }
 
     // 渲染場景
