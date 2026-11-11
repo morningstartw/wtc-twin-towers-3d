@@ -9,38 +9,38 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 // 預設經典導覽視角設定
 export const CAMERA_PRESETS = {
   plaza: {
-    pos: new THREE.Vector3(0, 3.2, 35),
-    target: new THREE.Vector3(-10, 160, -10),
+    pos: new THREE.Vector3(25, 4.0, 45),
+    target: new THREE.Vector3(-20, 80, -20),
     title: '奧斯汀廣場中央仰望'
   },
   aerial: {
     pos: new THREE.Vector3(420, 320, 480),
-    target: new THREE.Vector3(0, 180, 0),
+    target: new THREE.Vector3(0, 160, 0),
     title: '曼哈頓高空俯瞰全景'
   },
   deck: {
-    pos: new THREE.Vector3(65, 417, 35),
-    target: new THREE.Vector3(0, 415, 0),
+    pos: new THREE.Vector3(60, 418.5, 60),
+    target: new THREE.Vector3(-70, 430, -70),
     title: '南塔 110 樓室外觀景台'
   },
   antenna: {
-    pos: new THREE.Vector3(-42, 495, -42),
-    target: new THREE.Vector3(-45, 470, -45),
+    pos: new THREE.Vector3(-38, 490, -38),
+    target: new THREE.Vector3(-70, 475, -70),
     title: '北塔 526m 避雷針天線'
   },
   hudson: {
-    pos: new THREE.Vector3(-600, 75, 0),
-    target: new THREE.Vector3(0, 180, 0),
+    pos: new THREE.Vector3(-650, 85, 0),
+    target: new THREE.Vector3(0, 160, 0),
     title: '哈德遜水岸全景'
   },
   westst: {
-    pos: new THREE.Vector3(-90, 4, 30),
-    target: new THREE.Vector3(-50, 180, -20),
+    pos: new THREE.Vector3(-95, 4.5, 30),
+    target: new THREE.Vector3(-42, 120, 30),
     title: '西街人行道仰角'
   },
   wintergarden: {
-    pos: new THREE.Vector3(-285, 12, 0),
-    target: new THREE.Vector3(0, 200, 0),
+    pos: new THREE.Vector3(-290, 10, 35),
+    target: new THREE.Vector3(-245, 35, 0),
     title: '冬季花園水岸步道'
   }
 };
@@ -59,8 +59,9 @@ export function createCameraManager(camera, domElement, options = {}) {
   controls.enableDamping = true;
   controls.dampingFactor = 0.05;
   controls.target.set(0, 160, 0);
-  controls.maxPolarAngle = Math.PI / 2 + 0.03;
-  controls.minDistance = 15;
+  controls.minPolarAngle = 0.02; // 防止頂視萬向鎖 (Gimbal lock)
+  controls.maxPolarAngle = Math.PI - 0.05; // 允許由仰角觀測塔頂，避免低機位強制瞬移
+  controls.minDistance = 5;
   controls.maxDistance = 3500;
 
   // 2. 視角平滑過渡動畫狀態
@@ -264,12 +265,23 @@ export function createCameraManager(camera, domElement, options = {}) {
 
       camera.position.lerpVectors(startPosition, endPosition, ease);
       controls.target.lerpVectors(startTarget, endTarget, ease);
+
+      // 智慧飛行拋物線弧度 (Parabolic Elevation Arc)
+      // 避免低空與高空建築視角切換時直接穿透 415m 雙塔，在航程中段形成平滑爬升仰角
+      const horizDist = Math.hypot(endPosition.x - startPosition.x, endPosition.z - startPosition.z);
+      const arcBoost = Math.sin(progress * Math.PI) * Math.min(85, horizDist * 0.14);
+      camera.position.y += arcBoost;
+
+      // 保持 Up 向量始終垂直穩定，避免滾轉 (Roll) 或萬向傾角抖動
+      camera.up.set(0, 1, 0);
       camera.lookAt(controls.target);
 
       if (progress >= 1.0) {
         isTransitioning = false;
         camera.position.copy(endPosition);
         controls.target.copy(endTarget);
+        camera.up.set(0, 1, 0);
+        camera.lookAt(endTarget);
         controls.enabled = true;
         controls.update();
         syncAnglesFromCamera();
@@ -286,6 +298,10 @@ export function createCameraManager(camera, domElement, options = {}) {
     if (mode === 'orbit') {
       if (controls.enabled) {
         controls.update();
+        // 地面碰撞防穿透保護 (Orbit 模式下相機不陷入地底或水面下)
+        if (camera.position.y < minGroundHeight) {
+          camera.position.y = minGroundHeight;
+        }
       }
       return;
     }
